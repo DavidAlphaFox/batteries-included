@@ -39,7 +39,7 @@ type t = string
 let empty = ""
 
 type index = int
-
+(* 计算所占字节长度 *)
 let length0 n =
   if n < 0x80 then 1 else
   if n < 0xe0 then 2 else
@@ -48,7 +48,7 @@ let length0 n =
 let look s i =
   let n' =
     let n = Char.code (String.unsafe_get s i) in
-    if n < 0x80 then n else
+    if n < 0x80 then n else (* 单字节的utf8 ascii *)
     if n <= 0xdf then
       (n - 0xc0) lsl 6 lor (0x7f land (Char.code (String.unsafe_get s (i + 1))))
     else if n <= 0xef then
@@ -67,18 +67,18 @@ let look s i =
       n' lsl 6 lor (0x7f land m)
   in
   BatUChar.unsafe_chr n'
-
+(* 下一个字符所在位置 *)
 let next s i =
   let n = Char.code s.[i] in
   if n < 0x80 then i + 1 else
   if n <= 0xdf then i + 2
   else if n <= 0xef then i + 3
   else i + 4
-
+(* 反向搜索 *)
 let rec search_head_backward s i =
   if i < 0 then -1 else
     let n = Char.code s.[i] in
-    if n < 0x80 || n >= 0xc2 then i else
+    if n < 0x80 || n >= 0xc2 then i else (* 找到utf8的第一字节后返回i否则持续的去搜索 *)
       search_head_backward s (i - 1)
 
 let prev s i = search_head_backward s (i - 1)
